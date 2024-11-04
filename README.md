@@ -5,7 +5,7 @@ This code example integrates Secure Hash Algorithm (SHA),  Advanced Encryption S
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-threadx-crypto)
 
-[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzk4ODIiLCJTcGVjIE51bWJlciI6IjAwMi0zOTg4MiIsIkRvYyBUaXRsZSI6IkNyeXB0byIsInJpZCI6InNodWJoYW0gc2hhaCIsIkRvYyB2ZXJzaW9uIjoiMS4wLjAiLCJEb2MgTGFuZ3VhZ2UiOiJFbmdsaXNoIiwiRG9jIERpdmlzaW9uIjoiTUNEIiwiRG9jIEJVIjoiSUNXIiwiRG9jIEZhbWlseSI6IldJRkkifQ==)
+[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyMzk4ODIiLCJTcGVjIE51bWJlciI6IjAwMi0zOTg4MiIsIkRvYyBUaXRsZSI6IkNyeXB0byIsInJpZCI6InNodWJoYW0gc2hhaCIsIkRvYyB2ZXJzaW9uIjoiMS4xLjAiLCJEb2MgTGFuZ3VhZ2UiOiJFbmdsaXNoIiwiRG9jIERpdmlzaW9uIjoiTUNEIiwiRG9jIEJVIjoiSUNXIiwiRG9jIEZhbWlseSI6IldJRkkifQ==)
 
 
 ## Requirements
@@ -223,7 +223,7 @@ You can debug the example to step through the code.
 
 <details><summary><b>In Eclipse IDE</b></summary>
 
-Use the **\<Application Name> Debug (KitProg3_MiniProg4)** configuration in the **Quick Panel**. For details, see the "Program and debug" section in the [Eclipse IDE for ModusToolbox&trade; user guide](https://www.infineon.com/MTBEclipseIDEUserGuide).
+Use the **\<Application Name> Attach (KitProg3_MiniProg4)** configuration in the **Quick Panel**. For details, see the "Program and debug" section in the [Eclipse IDE for ModusToolbox&trade; user guide](https://www.infineon.com/MTBEclipseIDEUserGuide).
 
 
 </details>
@@ -284,6 +284,7 @@ Document title: *CE239882* - *Crypto*
  Version | Description of change
  ------- | ---------------------
  1.0.0   | New code example
+ 1.1.0   | Replaced scanf with cyhal_uart for improved I/O handling
 
 <br>
 

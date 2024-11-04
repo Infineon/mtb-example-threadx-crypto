@@ -1,11 +1,16 @@
 #include <stdint.h>
 #include "cyhal.h"
+#include "cy_retarget_io.h"
 #include "mbedtls/aes.h"
 #include "mbedtls/ccm.h"
 #include "mbedtls/gcm.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
+#include "crypto_fw_accel_api.h"
+
+/* RTOS header file */
+#include "cyabs_rtos.h"
 
 // Constants defining the sizes for AES keys and blocks
 #define BLOCK_SIZE 16
@@ -29,12 +34,11 @@ unsigned char iv[BLOCK_SIZE] = "YourIVvector!!!!";
 // Function prototypes
 int aes_crypt(const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size,  const unsigned char *iv, int mode, size_t mode_choice);
 void computeSHA(const char *input, int sha_choice);
-void crypto_gen_random(void *context, uint8_t *output, size_t output_size);
 
 // Function to print a buffer as hex values
 void print_hex(const char *label, const unsigned char *buf, size_t len)
 {
-    printf("%s: ", label);
+    printf("%s ", label);
     for (size_t i = 0; i < len; ++i) {
         if (i < (size_t)INT_MAX){
             printf("%02X", buf[i]);
@@ -61,7 +65,7 @@ cy_rslt_t pad_buffer(unsigned char *buffer, size_t input_length, size_t buffer_s
 
 // The main function that processes user input to select the cryptographic operation
 void processInput() {
-    int algorithm_choice, key_choice, sha_choice, mode_choice;
+    uint8_t algorithm_choice, key_choice, sha_choice, mode_choice;
     uint8_t OUTPUT[128]; // Buffer for output
 
     // User interaction for algorithm selection
@@ -71,14 +75,14 @@ void processInput() {
     printf("3. Random number generator\n");
     printf("Enter choice (1-3): \n\n");
 
-    // Error handling for user input
-    if (scanf("%d", &algorithm_choice) != 1) {
-        printf("Error reading Algorithm choice. Please enter a valid number.\n");
-        return;
+    while(!cyhal_uart_readable(&cy_retarget_io_uart_obj))
+    {
+        cy_rtos_delay_milliseconds(100);
     }
+    cyhal_uart_getc(&cy_retarget_io_uart_obj , &algorithm_choice, 0);
 
     switch(algorithm_choice){
-        case 1:
+        case '1':
         {
             printf("Select AES key:\n");
             printf("1. AES-128\n");
@@ -86,21 +90,22 @@ void processInput() {
             printf("3. AES-256\n");
             printf("Enter choice (1-3): \n\n");
 
-            if (scanf("%d", &key_choice) != 1) {
-                printf("Error reading Key choice. Please enter a valid number.\n");
-                return;
+            while(!cyhal_uart_readable(&cy_retarget_io_uart_obj))
+            {
+                cy_rtos_delay_milliseconds(100);
             }
+            cyhal_uart_getc(&cy_retarget_io_uart_obj , &key_choice, 0);
 
             switch (key_choice) {
-                case 1:
+                case '1':
                     key = key_128;
                     key_size = 16;
                     break;
-                case 2:
+                case '2':
                     key = key_192;
                     key_size = 24;
                     break;
-                case 3:
+                case '3':
                     key = key_256;
                     key_size = 32;
                     break;
@@ -116,12 +121,13 @@ void processInput() {
             printf("4. AES_ECB\n");
             printf("Enter choice (1-3): \n\n");
 
-            if (scanf("%d", &mode_choice) != 1) {
-                printf("Error reading Mode choice. Please enter a valid number.\n");
-                return;
+            while(!cyhal_uart_readable(&cy_retarget_io_uart_obj))
+            {
+                cy_rtos_delay_milliseconds(100);
             }
+            cyhal_uart_getc(&cy_retarget_io_uart_obj , &mode_choice, 0);
 
-            if(mode_choice>4)
+            if(mode_choice>'4')
             {
                 printf("Invalid mode choice! AES encryption failed.\n");
                 return;
@@ -154,7 +160,7 @@ void processInput() {
             free(encrypted);
             break;
         }
-        case 2:
+        case '2':
         {
             printf("Select SHA key:\n");
             printf("1. SHA1\n");
@@ -166,12 +172,13 @@ void processInput() {
             printf("7. SHA512/256\n");
             printf("Enter choice (1-7): \n\n");
 
-            if (scanf("%d", &sha_choice) != 1) {
-                printf("Error reading SHA choice. Please enter a valid number.\n");
-                return;
+            while(!cyhal_uart_readable(&cy_retarget_io_uart_obj))
+            {
+                cy_rtos_delay_milliseconds(100);
             }
+            cyhal_uart_getc(&cy_retarget_io_uart_obj , &sha_choice, 0);
 
-            if (sha_choice < 1 || sha_choice > 7) {
+            if (sha_choice < '1' || sha_choice > '7') {
                 printf("Invalid SHA algorithm choice!\n");
                 return;
             }
@@ -179,10 +186,16 @@ void processInput() {
             computeSHA((const char*)input, sha_choice);
             break;
         }
-        case 3:
+        case '3':
         {
+            memset(OUTPUT,0,sizeof(OUTPUT));
             crypto_gen_random(NULL,OUTPUT,8);
-            printf("Random number: 0x%0llx\n\n", *((uint64_t *)OUTPUT));
+            printf("Random number: 0x");
+            for(int i=7;i>=0;i--)
+            {
+                printf("%02x",OUTPUT[i]);
+            }
+            printf("\n");
             break;
         }
         default:
@@ -230,16 +243,16 @@ int aes_crypt(const unsigned char *input, size_t input_len,
 
     switch(mode_choice)
     {
-        case 1:
+        case '1':
             status = mbedtls_aes_crypt_cbc(&aes, mode, input_len, iv_copy, buffer, output);
             break;
-        case 2:
+        case '2':
             status = mbedtls_aes_crypt_ctr(&aes, input_len, NULL, iv_copy, NULL, buffer, output);
             break;
-        case 3:
+        case '3':
             status = mbedtls_aes_crypt_ofb(&aes, input_len, NULL, iv_copy, buffer, output);
             break;
-        case 4:
+        case '4':
             for (int i = 0; i < input_len; i += 16) {
             status = mbedtls_aes_crypt_ecb(&aes, mode, &buffer[i], &output[i]);
             }
@@ -261,31 +274,31 @@ void computeSHA(const char *input, int sha_choice) {
     size_t output_length;
 
     switch(sha_choice) {
-        case 1: // SHA1
+        case '1': // SHA1
             output_length = 20;
             mbedtls_sha1((const unsigned char *)input, strlen(input), output);
             break;
-        case 2: // SHA224
+        case '2': // SHA224
             output_length = 28;
             mbedtls_sha256((const unsigned char *)input, strlen(input), output, 1);
             break;
-        case 3: // SHA256
+        case '3': // SHA256
             output_length = 32;
             mbedtls_sha256((const unsigned char *)input, strlen(input), output, 0);
             break;
-        case 4: // SHA384
+        case '4': // SHA384
             output_length = 48;
             mbedtls_sha512((const unsigned char *)input, strlen(input), output, 1);
             break;
-        case 5: // SHA512
+        case '5': // SHA512
             output_length = 64;
             mbedtls_sha512((const unsigned char *)input, strlen(input), output, 0);
             break;
-        case 6: // SHA512/224
+        case '6': // SHA512/224
             output_length = 28;
             mbedtls_sha512((const unsigned char *)input, strlen(input), output, 3);
             break;
-        case 7: // SHA512/256
+        case '7': // SHA512/256
             output_length = 32;
             mbedtls_sha512((const unsigned char *)input, strlen(input), output, 4);
             break;
@@ -293,7 +306,6 @@ void computeSHA(const char *input, int sha_choice) {
             printf("Invalid SHA algorithm choice! Execution terminated. \n");
             return;
     }
-    print_hex("SHA hash of the input is: \n", output, output_length);
-    printf("\n\n");
+    print_hex("SHA hash of the input is:", output, output_length);
+    printf("\n");
 }
-
